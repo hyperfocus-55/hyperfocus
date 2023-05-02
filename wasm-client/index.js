@@ -33,7 +33,7 @@ export const buildClient = async (options = {fps: 60}) => {
     drawRect: r => console.log('drawingRect', r) || options.context.fillRect(r.x, r.y, r.h, r.w)
   };
   const css = document.createElement('link');
-  css.href='/wasm-client/client.css';
+  css.href='@hyperfocus/wasm-client/client.css';
   css.rel='stylesheet';
   css.type='text/css';
   document.body.appendChild(client);
