@@ -12,77 +12,112 @@ async function instantiate(module, imports = {}) {
           throw Error(`${message} in ${fileName}:${lineNumber}:${columnNumber}`);
         })();
       },
-      "console.log"(s) {
+      "console.log"(str) {
         // assembly/index/log(~lib/string/String) => void
-        s = __liftString(s >>> 0);
-        console.log(s);
+        str = __liftString(str >>> 0);
+        console.log(str);
       },
-      drawRect(rect) {
+      "draw.rect"(rect) {
         // assembly/index/drawRect(assembly/shapes/Rect) => void
-        rect = __liftInternref(rect >>> 0);
-        drawRect(rect);
+        rect = __liftRecord4(rect >>> 0);
+        draw.rect(rect);
+      },
+      "draw.text"(x, y, str, color) {
+        // assembly/index/drawText(i16, i16, ~lib/string/String, ~lib/string/String | null) => void
+        str = __liftString(str >>> 0);
+        color = __liftString(color >>> 0);
+        draw.text(x, y, str, color);
+      },
+      seed() {
+        // ~lib/builtins/seed() => f64
+        return (() => {
+          // @external.js
+          return Date.now() * Math.random();
+        })();
       },
     }),
   };
   const { exports } = await WebAssembly.instantiate(module, adaptedImports);
   const memory = exports.memory || imports.env.memory;
   const adaptedExports = Object.setPrototypeOf({
-    log(s) {
+    log(str) {
       // assembly/index/log(~lib/string/String) => void
-      s = __lowerString(s) || __notnull();
-      exports.log(s);
+      str = __lowerString(str) || __notnull();
+      exports.log(str);
     },
     drawRect(rect) {
       // assembly/index/drawRect(assembly/shapes/Rect) => void
-      rect = __lowerInternref(rect) || __notnull();
+      rect = __lowerRecord4(rect) || __notnull();
       exports.drawRect(rect);
     },
-    start(canvas) {
-      // assembly/index/start(assembly/canvas/Canvas) => void
-      canvas = __lowerRecord5(canvas) || __notnull();
-      exports.start(canvas);
+    drawText(x, y, str, color) {
+      // assembly/index/drawText(i16, i16, ~lib/string/String, ~lib/string/String | null) => void
+      str = __retain(__lowerString(str) || __notnull());
+      color = __lowerString(color);
+      try {
+        exports.drawText(x, y, str, color);
+      } finally {
+        __release(str);
+      }
     },
     onEnterFrame(dt, input) {
       // assembly/index/onEnterFrame(f32, assembly/input/Input) => void
-      input = __lowerRecord6(input) || __notnull();
+      input = __lowerRecord5(input) || __notnull();
       exports.onEnterFrame(dt, input);
     },
   }, exports);
-  function __lowerRecord5(value) {
-    // assembly/canvas/Canvas
+  function __liftRecord4(pointer) {
+    // assembly/shapes/Rect
+    // Hint: Opt-out from lifting as a record by providing an empty constructor
+    if (!pointer) return null;
+    return {
+      x: __getF32(pointer + 0),
+      y: __getF32(pointer + 4),
+      h: __getF32(pointer + 8),
+      w: __getF32(pointer + 12),
+      color: __liftString(__getU32(pointer + 16)),
+    };
+  }
+  function __lowerRecord4(value) {
+    // assembly/shapes/Rect
     // Hint: Opt-out from lowering as a record by providing an empty constructor
     if (value == null) return 0;
-    const pointer = exports.__pin(exports.__new(0, 5));
+    const pointer = exports.__pin(exports.__new(20, 4));
+    __setF32(pointer + 0, value.x);
+    __setF32(pointer + 4, value.y);
+    __setF32(pointer + 8, value.h);
+    __setF32(pointer + 12, value.w);
+    __setU32(pointer + 16, __lowerString(value.color) || __notnull());
     exports.__unpin(pointer);
     return pointer;
   }
-  function __lowerRecord7(value) {
+  function __lowerRecord6(value) {
     // assembly/input/KeyInput
     // Hint: Opt-out from lowering as a record by providing an empty constructor
     if (value == null) return 0;
-    const pointer = exports.__pin(exports.__new(2, 7));
+    const pointer = exports.__pin(exports.__new(2, 6));
     __setU8(pointer + 0, value.ArrowDown ? 1 : 0);
     __setU8(pointer + 1, value.ArrowUp ? 1 : 0);
     exports.__unpin(pointer);
     return pointer;
   }
-  function __lowerRecord8(value) {
+  function __lowerRecord7(value) {
     // assembly/input/MouseInput
     // Hint: Opt-out from lowering as a record by providing an empty constructor
     if (value == null) return 0;
-    const pointer = exports.__pin(exports.__new(4, 8));
+    const pointer = exports.__pin(exports.__new(4, 7));
     __setU16(pointer + 0, value.x);
     __setU16(pointer + 2, value.y);
     exports.__unpin(pointer);
     return pointer;
   }
-  function __lowerRecord6(value) {
+  function __lowerRecord5(value) {
     // assembly/input/Input
     // Hint: Opt-out from lowering as a record by providing an empty constructor
     if (value == null) return 0;
-    const pointer = exports.__pin(exports.__new(8, 6));
-    __setU32(pointer + 0, __lowerRecord7(value.keys) || __notnull());
-    __setU32(pointer + 4, __lowerRecord8(value.mouse) || __notnull());
+    const pointer = exports.__pin(exports.__new(8, 5));
+    __setU32(pointer + 0, __lowerRecord6(value.keys) || __notnull());
+    __setU32(pointer + 4, __lowerRecord7(value.mouse) || __notnull());
     exports.__unpin(pointer);
     return pointer;
   }
@@ -105,19 +140,6 @@ async function instantiate(module, imports = {}) {
       memoryU16 = new Uint16Array(memory.buffer);
     for (let i = 0; i < length; ++i) memoryU16[(pointer >>> 1) + i] = value.charCodeAt(i);
     return pointer;
-  }
-  class Internref extends Number {}
-  const registry = new FinalizationRegistry(__release);
-  function __liftInternref(pointer) {
-    if (!pointer) return null;
-    const sentinel = new Internref(__retain(pointer));
-    registry.register(sentinel, pointer);
-    return sentinel;
-  }
-  function __lowerInternref(value) {
-    if (value == null) return 0;
-    if (value instanceof Internref) return value.valueOf();
-    throw TypeError("internref expected");
   }
   const refcounts = new Map();
   function __retain(pointer) {
@@ -164,12 +186,37 @@ async function instantiate(module, imports = {}) {
       __dataview.setUint32(pointer, value, true);
     }
   }
+  function __setF32(pointer, value) {
+    try {
+      __dataview.setFloat32(pointer, value, true);
+    } catch {
+      __dataview = new DataView(memory.buffer);
+      __dataview.setFloat32(pointer, value, true);
+    }
+  }
+  function __getU32(pointer) {
+    try {
+      return __dataview.getUint32(pointer, true);
+    } catch {
+      __dataview = new DataView(memory.buffer);
+      return __dataview.getUint32(pointer, true);
+    }
+  }
+  function __getF32(pointer) {
+    try {
+      return __dataview.getFloat32(pointer, true);
+    } catch {
+      __dataview = new DataView(memory.buffer);
+      return __dataview.getFloat32(pointer, true);
+    }
+  }
   return adaptedExports;
 }
 export const {
   memory,
   log,
   drawRect,
+  drawText,
   start,
   onEnterFrame,
 } = await (async url => instantiate(
