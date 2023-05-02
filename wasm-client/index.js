@@ -52,7 +52,7 @@ export const start = async (options) => {
   startOnEnterFrame({wasm, options});
 }
 
-export const loadWasm = async (canvas, file = '/wasm-engine/build/bin.wasm') => {
+export const loadWasm = async (canvas, file = '@hyperfocus/wasm-engine/build/bin.wasm') => {
   const wasm = await WebAssembly
     .instantiateStreaming(fetch(file), {
       env: {
