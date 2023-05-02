@@ -1,0 +1,7 @@
+{
+  "name": "wasm-client",
+  "packageManager": "yarn@3.2.3",
+  "dependencies": {
+    "buffer": "^6.0.3"
+  }
+}

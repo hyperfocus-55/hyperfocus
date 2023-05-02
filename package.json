@@ -1,0 +1,15 @@
+{
+  "author": "i-am-jabriel",
+  "name":"hyperfocus",
+  "type":"module",
+  "directories": {
+    "common": "./common",
+    "wasm-client": "./wasm-client",
+    "wasm-engine": "./wasm-engine"
+  },
+  "workspaces": [
+    "common/*",
+    "wasm-client/*",
+    "wasm-engine/*"
+  ]
+}
